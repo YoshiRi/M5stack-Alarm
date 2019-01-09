@@ -53,6 +53,8 @@ byte xcolon = 0, xsecs = 0;
 unsigned int colour = 0;
 int8_t flag = 0;
 
+// serial DMX output
+uint8_t DMXout[512];
 
 //--- functions ----//
 bool timer_clock_diff();
@@ -62,6 +64,8 @@ void button_action();
 void ibutton_action();
 void show_timer();
 int draw_timerchar(const uint8_t, const int , const int, const int, const int);
+void writeDMX512();
+void sendRGB(uint8_t red, uint8_t green, uint8_t blue);
 // -----------------//
 
 
@@ -157,8 +161,10 @@ bool timer_clock_diff(){
         uint8_t green = 255-255.0*diffrate*diffrate*diffrate*diffrate;
         uint8_t blue = 255-125.0*diffrate*diffrate;
         M5.Lcd.fillScreen(getColor(red,green,blue));
+        sendRGB(red,green,blue);
     }else{
         M5.Lcd.fillScreen(getColor(0,0,0));
+        sendRGB(0,0,0);
     }
     show_clock();
     if(diff==0) return 1;
@@ -285,18 +291,26 @@ void ibutton_action(){
     }
 }
 
-/*
+void sendRGB(uint8_t red, uint8_t green, uint8_t blue){
+    DMXout[1] = red;
+    DMXout[2] = green;
+    DMXout[3] = blue;
+    writeDMX512();
+}
 
-void writeDMX(int x){
-    pinMode(Tx,OUTPUT);
-    digitalWrite(Tx,0);//Break as LOW
+
+// use T0 as serial port
+void writeDMX512(){
+    pinMode(T0,OUTPUT);
+    digitalWrite(T0,0);//Break as LOW
     delayMicroseconds(88);
-    digitalWrite(Tx,1);//MAB as HIGH
+    digitalWrite(T0,1);//MAB as HIGH
     delayMicroseconds(8);
     Serial.begin(250000,SERIAL_8N2);
     Serial.write(0x0);//Start Code as 0
-    Serial.write(x);//Ch1 Data
-    Serial.end( );
+    for(int i;i<512;i++){
+        Serial.write(DMXout[i]);
+    }
+    //Serial.write(x);//Ch1 Data
+    Serial.end();
  }
-
-*/
