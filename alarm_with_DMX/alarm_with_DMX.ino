@@ -66,6 +66,7 @@ void show_timer();
 int draw_timerchar(const uint8_t, const int , const int, const int, const int);
 void writeDMX512();
 void sendRGB(uint8_t red, uint8_t green, uint8_t blue);
+void sendserialT0(uint8_t data);
 // -----------------//
 
 
@@ -298,19 +299,54 @@ void sendRGB(uint8_t red, uint8_t green, uint8_t blue){
     writeDMX512();
 }
 
+void sendserialT0(uint8_t data){
+    uint8_t buff = data;
+    uint8_t div[8] = {1,2,4,8,16,32,64,128};
+    pinMode(T0,OUTPUT);
+    pinMode(T2,OUTPUT);
+
+    // start code
+    digitalWrite(T0,1);//set HIGH
+    digitalWrite(T2,0);
+    delayMicroseconds(4);
+
+    // senddata
+    for(int i=7;i>-1;i--){
+        if(buff/div[i] >= 1){
+            buff -= div[i];
+            digitalWrite(T0,1);//set HIGH
+            digitalWrite(T2,0);
+            delayMicroseconds(4);
+        }else{
+            digitalWrite(T0,0);//set LoW
+            digitalWrite(T2,1);
+            delayMicroseconds(4);
+        }
+    }
+    // stop code
+    digitalWrite(T0,0);//set HIGH
+    digitalWrite(T2,1);
+    delayMicroseconds(8);
+
+}
 
 // use T0 as serial port
 void writeDMX512(){
     pinMode(T0,OUTPUT);
+    pinMode(T2,OUTPUT);
     digitalWrite(T0,0);//Break as LOW
-    delayMicroseconds(88);
+    digitalWrite(T2,1);//Break as LOW
+    delayMicroseconds(176);
     digitalWrite(T0,1);//MAB as HIGH
-    delayMicroseconds(8);
-    Serial.begin(250000,SERIAL_8N2);
-    Serial.write(0x0);//Start Code as 0
+    digitalWrite(T2,0);
+    delayMicroseconds(16);
+    sendserialT0(0);
+    //Serial.begin(250000,SERIAL_8N2);
+    //Serial.write(0x0);//Start Code as 0
     for(int i;i<512;i++){
-        Serial.write(DMXout[i]);
+        //Serial.write(DMXout[i]);
+        sendserialT0(DMXout[i]);
     }
     //Serial.write(x);//Ch1 Data
-    Serial.end();
+    //Serial.end();
  }
